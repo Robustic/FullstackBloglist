@@ -34,8 +34,42 @@ const favoriteBlog = (blogs) => {
     return returnBlog
 }
 
+const mostBlogs = (blogs) => {
+    if (typeof blogs === undefined || blogs.length === 0) {
+        return null
+    }
+    const findMostBlogs = (list, blog) => {
+        const findedAuthor = list.find(element => element.author === blog.author)
+        if (findedAuthor === undefined) {
+            const newList = [
+                ...list,
+                {
+                    author: blog.author,
+                    blogs: blog.likes
+                },
+            ]
+            return newList
+        } else {
+            findedAuthor.blogs += blog.likes
+            return list
+        }
+    }
+
+    const favoriteList = blogs.reduce(findMostBlogs, [])
+
+    const findLargestValue = (largest, author) => {
+        if (largest === null) {
+            return author
+        }
+        return (largest.blogs < author.blogs) ? author : largest
+    }
+
+    return favoriteList.reduce(findLargestValue, null)
+}
+
 module.exports = {
     dummy,
     totalLikes,
-    favoriteBlog
+    favoriteBlog,
+    mostBlogs
 }
