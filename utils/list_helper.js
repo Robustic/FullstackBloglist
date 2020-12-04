@@ -45,12 +45,12 @@ const mostBlogs = (blogs) => {
                 ...list,
                 {
                     author: blog.author,
-                    blogs: blog.likes
+                    blogs: 1
                 },
             ]
             return newList
         } else {
-            findedAuthor.blogs += blog.likes
+            findedAuthor.blogs += 1
             return list
         }
     }
@@ -67,9 +67,43 @@ const mostBlogs = (blogs) => {
     return favoriteList.reduce(findLargestValue, null)
 }
 
+const mostLikes = (blogs) => {
+    if (typeof blogs === undefined || blogs.length === 0) {
+        return null
+    }
+    const findMostBlogs = (list, blog) => {
+        const findedAuthor = list.find(element => element.author === blog.author)
+        if (findedAuthor === undefined) {
+            const newList = [
+                ...list,
+                {
+                    author: blog.author,
+                    likes: blog.likes
+                },
+            ]
+            return newList
+        } else {
+            findedAuthor.likes += blog.likes
+            return list
+        }
+    }
+
+    const favoriteList = blogs.reduce(findMostBlogs, [])
+
+    const findLargestValue = (largest, author) => {
+        if (largest === null) {
+            return author
+        }
+        return (largest.likes < author.likes) ? author : largest
+    }
+
+    return favoriteList.reduce(findLargestValue, null)
+}
+
 module.exports = {
     dummy,
     totalLikes,
     favoriteBlog,
-    mostBlogs
+    mostBlogs,
+    mostLikes
 }
