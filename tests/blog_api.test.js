@@ -29,6 +29,12 @@ describe('get operation for blogs', () => {
         const contents = response.body.map(r => r.title)
         expect(contents).toContain(helper.initialBlogs[1].title)
     })
+
+    test('a blog includes field called id', async () => {
+        const response = await api.get('/api/blogs')
+        const contents = response.body.map(r => r)
+        expect(contents[0].id).toBeDefined()
+    })
 })
 
 afterAll(() => {
