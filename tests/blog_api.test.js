@@ -58,6 +58,28 @@ describe('post operation for blogs', () => {
         const contents = blogsInDB.map(blog => blog.title)
         expect(contents).toContain('Uusi_blogi')
     })
+
+    test('likes 0 saved to db if not defined', async () => {
+        const newBlog = {
+            title: 'Toinen Uusi_blogi',
+            author: 'Tekijä Henkilö Eri',
+            url: 'www.uudetblogit.fi/setoinen'
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        const blogsInDB = await helper.blogsInDb()
+
+        const content = blogsInDB.filter(blog => blog.title === 'Toinen Uusi_blogi')
+        expect(content[0].likes).toBeDefined()
+
+        const contentWithLikes = blogsInDB.filter(blog => blog.title === 'Outo_test')
+        expect(contentWithLikes[0].likes).toBe(13)
+    })
 })
 
 afterAll(() => {
