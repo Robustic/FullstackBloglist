@@ -37,6 +37,29 @@ describe('get operation for blogs', () => {
     })
 })
 
+describe('post operation for blogs', () => {
+    test('blog can be added to the db', async () => {
+        const newBlog = {
+            title: 'Uusi_blogi',
+            author: 'Tekijä Henkilö',
+            url: 'www.uudetblogit.fi',
+            likes: 23
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        const blogsInDB = await helper.blogsInDb()
+        expect(blogsInDB).toHaveLength(helper.initialBlogs.length + 1)
+
+        const contents = blogsInDB.map(blog => blog.title)
+        expect(contents).toContain('Uusi_blogi')
+    })
+})
+
 afterAll(() => {
     mongoose.connection.close()
 })
