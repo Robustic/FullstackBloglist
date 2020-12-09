@@ -80,6 +80,38 @@ describe('post operation for blogs', () => {
         const contentWithLikes = blogsInDB.filter(blog => blog.title === 'Outo_test')
         expect(contentWithLikes[0].likes).toBe(13)
     })
+
+    test('blog not saved if title is missing', async () => {
+        const newBlog = {
+            author: 'epäonnistuja',
+            url: 'www.eimene.fi',
+            likes: 13
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(400)
+
+        const blogsInDB = await helper.blogsInDb()
+        expect(blogsInDB).toHaveLength(helper.initialBlogs.length)
+    })
+
+    test('blog not saved if url is missing', async () => {
+        const newBlog = {
+            title: 'Eipä mene',
+            author: 'epäonnistuja',
+            likes: 13
+        }
+
+        await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(400)
+
+        const blogsInDB = await helper.blogsInDb()
+        expect(blogsInDB).toHaveLength(helper.initialBlogs.length)
+    })
 })
 
 afterAll(() => {
