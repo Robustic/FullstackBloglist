@@ -15,7 +15,7 @@ const initialBlogs = [
     },
 ]
 
-const nonExistingId = async () => {
+const nonExistingValidId = async () => {
     const blog = new Blog(
         {
             title: 'willremovethissoon',
@@ -35,5 +35,5 @@ const blogsInDb = async () => {
 }
 
 module.exports = {
-    initialBlogs, nonExistingId, blogsInDb
+    initialBlogs, nonExistingValidId, blogsInDb
 }

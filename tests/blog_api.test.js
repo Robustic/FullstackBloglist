@@ -11,7 +11,7 @@ beforeEach(async () => {
     await Blog.insertMany(helper.initialBlogs)
 })
 
-describe('get operation for blogs', () => {
+describe('GET operation for blogs', () => {
     test('blogs are returned as json', async () => {
         await api
             .get('/api/blogs')
@@ -37,7 +37,7 @@ describe('get operation for blogs', () => {
     })
 })
 
-describe('post operation for blogs', () => {
+describe('POST operation for blogs', () => {
     test('blog can be added to the db', async () => {
         const newBlog = {
             title: 'Uusi_blogi',
@@ -111,6 +111,39 @@ describe('post operation for blogs', () => {
 
         const blogsInDB = await helper.blogsInDb()
         expect(blogsInDB).toHaveLength(helper.initialBlogs.length)
+    })
+})
+
+describe('DELETE operation for blogs', () => {
+    test('fails if blog id does not exist', async () => {
+        const nonExistingValidId = await helper.nonExistingValidId()
+
+        await api
+            .delete(`/api/blogs/${nonExistingValidId}`)
+            .expect(404)
+    })
+
+    test('fails if blog id invalid', async () => {
+        const invalidNonExistingId = 'k435325k32455'
+
+        await api
+            .delete(`/api/blogs/${invalidNonExistingId}`)
+            .expect(400)
+    })
+
+    test('blog can be deleted if exist', async () => {
+        const blogsBeforeDelete = await helper.blogsInDb()
+        const blogToDelete = blogsBeforeDelete[1]
+
+        await api
+            .delete(`/api/blogs/${blogToDelete.id}`)
+            .expect(204)
+
+        const blogsAfterDelete = await helper.blogsInDb()
+        expect(blogsAfterDelete.length).toBe(blogsBeforeDelete.length - 1)
+
+        const contents = blogsAfterDelete.map(blog => blog.title)
+        expect(contents).not.toContain(blogToDelete.title)
     })
 })
 
