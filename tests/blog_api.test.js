@@ -147,6 +147,34 @@ describe('DELETE operation for blogs', () => {
     })
 })
 
+describe('PUT operation for blogs', () => {
+    test('blog can be update to db', async () => {
+        const blogsBeforeUpdate = await helper.blogsInDb()
+        const blogToUpdate = blogsBeforeUpdate[1]
+        const parametersToUpdate = {
+            author: 'New Author Name'
+        }
+
+        await api
+            .put(`/api/blogs/${blogToUpdate.id}`)
+            .send(parametersToUpdate)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+
+        const blogsInDB = await helper.blogsInDb()
+        expect(blogsInDB).toHaveLength(helper.initialBlogs.length)
+
+        const contents = blogsInDB.map(blog => blog.author)
+        expect(contents).toContain('New Author Name')
+
+        const updatedBlog = await Blog.findById(blogToUpdate.id)
+        expect(updatedBlog.title).toBe(blogToUpdate.title)
+        expect(updatedBlog.author).toBe('New Author Name')
+        expect(updatedBlog.url).toBe(blogToUpdate.url)
+        expect(updatedBlog.likes).toBe(blogToUpdate.likes)
+    })
+})
+
 afterAll(() => {
     mongoose.connection.close()
 })
