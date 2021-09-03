@@ -10,7 +10,8 @@ blogsRouter.get('/', async (request, response) => {
 blogsRouter.post('/', async (request, response) => {
     const body = request.body
 
-    const user = await User.findById(body.userId)
+    const users = await User.find({})
+    const user = users[0]
 
     if (body.title === undefined || body.url === undefined) {
         response.status(400).end()
@@ -45,11 +46,16 @@ blogsRouter.delete('/:id', async (request, response) => {
 blogsRouter.put('/:id', async (request, response) => {
     const oldBlog = await Blog.findById(request.params.id)
     const body = request.body
+
+    const users = await User.find({})
+    const user = users[0]
+
     const blog = {
         title: body.title === undefined ? oldBlog.title : body.title,
         author: body.author === undefined ? oldBlog.author : body.author,
         url: body.url === undefined ? oldBlog.url : body.url,
-        likes: body.likes === undefined ? oldBlog.likes : body.likes
+        likes: body.likes === undefined ? oldBlog.likes : body.likes,
+        user: body.user ===  undefined ? oldBlog.user : user._id,
     }
 
     const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
