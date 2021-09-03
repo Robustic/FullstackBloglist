@@ -1,6 +1,15 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
 const User = require('../models/user')
+const jwt = require('jsonwebtoken')
+
+const getTokenFrom = request => {
+    const authorization = request.get('authorization')
+    if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
+        return authorization.substring(7)
+    }
+    return null
+}
 
 blogsRouter.get('/', async (request, response) => {
     const blogs = await Blog.find({}).populate('user', { username: 1, name: 1 })
@@ -10,8 +19,18 @@ blogsRouter.get('/', async (request, response) => {
 blogsRouter.post('/', async (request, response) => {
     const body = request.body
 
-    const users = await User.find({})
-    const user = users[0]
+    const token = getTokenFrom(request)
+    if (!token) {
+        return response.status(401).json({ error: 'token missing' })
+    }
+    const decodedToken = jwt.verify(token, process.env.SECRET, function(err, decoded) {
+        if (err) {
+            return response.status(401).json({ error: 'token missing or invalid' })
+        }
+        return decoded
+    })
+
+    const user = await User.findById(decodedToken.id)
 
     if (body.title === undefined || body.url === undefined) {
         response.status(400).end()
@@ -47,15 +66,25 @@ blogsRouter.put('/:id', async (request, response) => {
     const oldBlog = await Blog.findById(request.params.id)
     const body = request.body
 
-    const users = await User.find({})
-    const user = users[0]
+    const token = getTokenFrom(request)
+    if (!token) {
+        return response.status(401).json({ error: 'token missing' })
+    }
+    const decodedToken = jwt.verify(token, process.env.SECRET, function(err, decoded) {
+        if (err) {
+            return response.status(401).json({ error: 'token missing or invalid' })
+        }
+        return decoded
+    })
+
+    const user = await User.findById(decodedToken.id)
 
     const blog = {
         title: body.title === undefined ? oldBlog.title : body.title,
         author: body.author === undefined ? oldBlog.author : body.author,
         url: body.url === undefined ? oldBlog.url : body.url,
         likes: body.likes === undefined ? oldBlog.likes : body.likes,
-        user: body.user ===  undefined ? oldBlog.user : user._id,
+        user: body.user === undefined ? oldBlog.user : user._id,
     }
 
     const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
