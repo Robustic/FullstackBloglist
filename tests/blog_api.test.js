@@ -1,37 +1,76 @@
 const supertest = require('supertest')
 const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
 const helper = require('./test_helper')
 const app = require('../app')
 const api = supertest(app)
 
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 beforeEach(async () => {
+    await User.deleteMany({})
+    const passwordHash = await bcrypt.hash('idonttell', 10)
+    const user = new User({ username: 'rootti', passwordHash })
+    await user.save()
+
+    const blogs = helper.initialBlogs.map(b => Object.assign(b, { user: user._id }))
     await Blog.deleteMany({})
-    await Blog.insertMany(helper.initialBlogs)
+    await Blog.insertMany(blogs)
+})
+
+const paraAuthorization = async () => {
+    const logging = {
+        username: 'rootti',
+        password: 'idonttell',
+    }
+    const logingResponse = await api
+        .post('/api/login')
+        .send(logging)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+
+    const token = logingResponse.body.token
+    return 'bearer ' + token
+}
+
+describe('GET operation needs token for authorization', () => {
+    test('GET operation without token does not work', async () => {
+        await api
+            .get('/api/blogs')
+            .expect(401)
+            .expect('Content-Type', /application\/json/)
+    })
 })
 
 describe('GET operation for blogs', () => {
     test('blogs are returned as json', async () => {
         await api
             .get('/api/blogs')
+            .set('Authorization', await paraAuthorization())
             .expect(200)
             .expect('Content-Type', /application\/json/)
     })
 
     test('all blogs are returned', async () => {
-        const response = await api.get('/api/blogs')
+        const response = await api
+            .get('/api/blogs')
+            .set('Authorization', await paraAuthorization())
         expect(response.body).toHaveLength(helper.initialBlogs.length)
     })
 
     test('a specific blog is within the returned blogs', async () => {
-        const response = await api.get('/api/blogs')
+        const response = await api
+            .get('/api/blogs')
+            .set('Authorization', await paraAuthorization())
         const contents = response.body.map(r => r.title)
         expect(contents).toContain(helper.initialBlogs[1].title)
     })
 
     test('a blog includes field called id', async () => {
-        const response = await api.get('/api/blogs')
+        const response = await api
+            .get('/api/blogs')
+            .set('Authorization', await paraAuthorization())
         const contents = response.body.map(r => r)
         expect(contents[0].id).toBeDefined()
     })
@@ -48,6 +87,7 @@ describe('POST operation for blogs', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', await paraAuthorization())
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -68,6 +108,7 @@ describe('POST operation for blogs', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', await paraAuthorization())
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -90,6 +131,7 @@ describe('POST operation for blogs', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', await paraAuthorization())
             .send(newBlog)
             .expect(400)
 
@@ -106,6 +148,7 @@ describe('POST operation for blogs', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', await paraAuthorization())
             .send(newBlog)
             .expect(400)
 
@@ -120,6 +163,7 @@ describe('DELETE operation for blogs', () => {
 
         await api
             .delete(`/api/blogs/${nonExistingValidId}`)
+            .set('Authorization', await paraAuthorization())
             .expect(404)
     })
 
@@ -128,6 +172,7 @@ describe('DELETE operation for blogs', () => {
 
         await api
             .delete(`/api/blogs/${invalidNonExistingId}`)
+            .set('Authorization', await paraAuthorization())
             .expect(400)
     })
 
@@ -137,6 +182,7 @@ describe('DELETE operation for blogs', () => {
 
         await api
             .delete(`/api/blogs/${blogToDelete.id}`)
+            .set('Authorization', await paraAuthorization())
             .expect(204)
 
         const blogsAfterDelete = await helper.blogsInDb()
@@ -157,6 +203,7 @@ describe('PUT operation for blogs', () => {
 
         await api
             .put(`/api/blogs/${blogToUpdate.id}`)
+            .set('Authorization', await paraAuthorization())
             .send(parametersToUpdate)
             .expect(200)
             .expect('Content-Type', /application\/json/)
