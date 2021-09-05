@@ -1,7 +1,5 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
-const User = require('../models/user')
-const jwt = require('jsonwebtoken')
 
 blogsRouter.get('/', async (request, response) => {
     const blogs = await Blog.find({}).populate('user', { username: 1, name: 1 })
@@ -10,17 +8,7 @@ blogsRouter.get('/', async (request, response) => {
 
 blogsRouter.post('/', async (request, response) => {
     const body = request.body
-
-    const token = request.token
-    if (!token) {
-        return response.status(401).json({ error: 'token missing' })
-    }
-    const decodedToken = jwt.verify(token, process.env.SECRET)
-    if (!decodedToken.id) {
-        return response.status(401).json({ error: 'token missing or invalid' })
-    }
-
-    const user = await User.findById(decodedToken.id)
+    const user = request.user
 
     if (body.title === undefined || body.url === undefined) {
         response.status(400).end()
@@ -42,19 +30,11 @@ blogsRouter.post('/', async (request, response) => {
 })
 
 blogsRouter.delete('/:id', async (request, response) => {
-    const token = request.token
-    if (!token) {
-        return response.status(401).json({ error: 'token missing' })
-    }
-    const decodedToken = jwt.verify(token, process.env.SECRET)
-    if (!decodedToken.id) {
-        return response.status(401).json({ error: 'token missing or invalid' })
-    }
-
     const blog = await Blog.findById(request.params.id)
+    const user = request.user
 
     if (blog) {
-        if (blog.user.toString() === decodedToken.id.toString()) {
+        if (blog.user.toString() === user.id.toString()) {
             await Blog.findByIdAndRemove(request.params.id)
             response.status(204).end()
         } else {
@@ -69,17 +49,7 @@ blogsRouter.delete('/:id', async (request, response) => {
 blogsRouter.put('/:id', async (request, response) => {
     const oldBlog = await Blog.findById(request.params.id)
     const body = request.body
-
-    const token = request.token
-    if (!token) {
-        return response.status(401).json({ error: 'token missing' })
-    }
-    const decodedToken = jwt.verify(token, process.env.SECRET)
-    if (!decodedToken.id) {
-        return response.status(401).json({ error: 'token missing or invalid' })
-    }
-
-    const user = await User.findById(decodedToken.id)
+    const user = request.user
 
     const blog = {
         title: body.title === undefined ? oldBlog.title : body.title,

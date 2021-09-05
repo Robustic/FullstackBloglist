@@ -1,4 +1,6 @@
 const logger = require('./logger')
+const User = require('../models/user')
+const jwt = require('jsonwebtoken')
 
 const requestLogger = (request, response, next) => {
     logger.info('Method:', request.method)
@@ -33,13 +35,34 @@ const errorHandler = (error, request, response, next) => {
 
 const tokenExtractor = (request, response, next) => {
     const authorization = request.headers.authorization
-    logger.info('authorization:', authorization)
     if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
         const splitted = authorization.substring(7)
-        logger.info('splitted:', splitted)
         request.token = splitted
     } else {
         request.token = ''
+    }
+    next()
+}
+
+const userExtractor = async (request, response, next) => {
+    const authorization = request.headers.authorization
+    if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
+        const token = authorization.substring(7)
+        if (!token) {
+            return response.status(401).json({ error: 'token missing' })
+        }
+        const decodedToken = jwt.verify(token, process.env.SECRET)
+        if (!decodedToken.id) {
+            return response.status(401).json({ error: 'token missing or invalid' })
+        }
+        const user = await User.findById(decodedToken.id)
+        if (!user) {
+            return response.status(401).json({ error: 'user not found' })
+        }
+        logger.info('user:', user)
+        request.user = user
+    } else {
+        return response.status(401).json({ error: 'authorization header missing or invalid' })
     }
     next()
 }
@@ -48,5 +71,6 @@ module.exports = {
     requestLogger,
     unknownEndpoint,
     errorHandler,
-    tokenExtractor
+    tokenExtractor,
+    userExtractor
 }
